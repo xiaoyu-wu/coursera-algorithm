@@ -8,8 +8,10 @@ import edu.princeton.cs.algs4.WeightedQuickUnionUF;
 
 public class Percolation {
     private WeightedQuickUnionUF grid;
-    private int[] openRecord;
+    private boolean[] openRecord;
     private int size;
+    private int head;
+    private int tail;
 
 
     public Percolation(int n) {
@@ -18,15 +20,13 @@ public class Percolation {
             throw new IllegalArgumentException("n must be positive integer!");
         }
         size = n;
-        openRecord = new int[n * n];
+        head = n * n;
+        tail = n * n + 1;
+        openRecord = new boolean[n * n];
         for (int i = 0; i < n * n; i++) {
-            openRecord[i] = 0;
+            openRecord[i] = false;
         }
         grid = new WeightedQuickUnionUF(n * n + 2);
-        for (int i = 1; i <= n; i++) {
-            grid.union(0, i);
-            grid.union(n * n + 1, n * n - i);
-        }
     }
 
     private void checkInputError(int row, int col) {
@@ -38,45 +38,56 @@ public class Percolation {
     public void open(int row, int col) {
         // open site (row, col) if it is not open already
         checkInputError(row, col);
-        openRecord[row * size + col] = 1;
-        if ((row > 1) && (openRecord[(row - 1) * size + col] == 1)) {
-            grid.union(row * size + col, (row - 1) * size + col);
+        openRecord[(row - 1) * size + col - 1] = true;
+        if ((row > 1) && openRecord[(row - 2) * size + col - 1]) {
+            grid.union((row - 1) * size + col - 1, (row - 2) * size + col - 1);
         }
-        if ((row < size) && (openRecord[(row + 1) * size + col] == 1)) {
-            grid.union(row * size + col, (row + 1) * size + col);
+        if ((row < size) && openRecord[row * size + col - 1]) {
+            grid.union((row - 1) * size + col - 1, row * size + col - 1);
         }
-        if ((col > 1) && (openRecord[row * size + col - 1] == 1)) {
-            grid.union(row * size + col, row * size + col - 1);
+        if ((col > 1) && openRecord[(row - 1) * size + col - 2]) {
+            grid.union((row - 1) * size + col - 1, (row - 1) * size + col - 2);
         }
-        if ((col < size) && (openRecord[row * size + col + 1] == 1)) {
-            grid.union(row * size + col, row * size + col + 1);
+        if ((col < size) && openRecord[(row - 1) * size + col]) {
+            grid.union((row - 1) * size + col - 1, (row - 1) * size + col);
+        }
+        if (row == 1) {
+            grid.union((row - 1) * size + col - 1, head);
+        }
+        if ((row == size)) {
+            grid.union((row - 1) * size + col - 1, tail);
         }
     }
 
     public boolean isOpen(int row, int col) {
         // is site (row, col) open?
         checkInputError(row, col);
-        return (openRecord[row * size + col] == 1);
+        return openRecord[(row - 1) * size + col - 1];
     }
 
     public boolean isFull(int row, int col) {
         // is site (row, col) full?
         checkInputError(row, col);
-        return grid.connected(0, row * size + col);
+        if (!isOpen(row, col)) {
+            return false;
+        }
+        return grid.connected((row - 1) * size + col - 1, head);
     }
 
     public int numberOfOpenSites() {
         // number of open sites
         int sum = 0;
-        for (int i : openRecord) {
-            sum += i;
+        for (boolean i : openRecord) {
+            if (i) {
+                sum += 1;
+            }
         }
         return sum;
     }
 
     public boolean percolates() {
         // does the system percolate?
-        return grid.connected(0, size * size + 1);
+        return grid.connected(head, tail);
     }
 
     public static void main(String[] args) {
