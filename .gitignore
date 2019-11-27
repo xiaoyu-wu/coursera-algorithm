@@ -2,3 +2,4 @@
 .idea
 .lift
 *.zip
+__pycache__/
